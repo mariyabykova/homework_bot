@@ -1,4 +1,5 @@
 import logging
+from msilib.schema import Error
 import os
 import sys
 import time
@@ -7,12 +8,9 @@ from dotenv import load_dotenv
 import telegram
 import requests
 
-from .exceptions import (
-    ApiStatusCodeException, 
-    HomeWorkIsNoneException, 
-    HomeworkStatusIsNoneException, 
-    UndocumentedHomeworkStatusException,
-)
+# from .exceptions import (
+#     ApiStatusCodeException, 
+# )
 
 
 load_dotenv()
@@ -37,7 +35,6 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.DEBUG)
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 logger.addHandler(logging.StreamHandler(sys.stdout))
 
 
@@ -55,6 +52,7 @@ def send_message(bot, message):
 def get_api_answer(current_timestamp):
     """Получение данных от API Практикума."""
     timestamp = current_timestamp or int(time.time())
+    # timestamp = current_timestamp
     params = {'from_date': timestamp}
     try:
         homework_statuses = requests.get(
@@ -66,7 +64,7 @@ def get_api_answer(current_timestamp):
                 f'Статус-код API: {homework_statuses.status_code}.'
             )
             logger.error(error_message)
-            raise ApiStatusCodeException(error_message)
+            raise Exception(error_message)
         return homework_statuses.json()
     except Exception as error:
         logger.error(f'Ошибка при запросе к основному API: {error}')
@@ -74,71 +72,95 @@ def get_api_answer(current_timestamp):
 
 def check_response(response):
     """Проверка ответа от API."""
-    
-    ...
+    if response.get('homeworks') is None:
+        error_message = 'Ответ от API не содержит ключа homeworks.'
+        logger.error(error_message)
+        raise KeyError(error_message)
+    if type(response) is not dict:
+        error_message = 'Ответ от API имеет некорректный тип.'
+        logger.error(error_message)
+        raise TypeError(error_message)
+    if type(response.get('homeworks')) is not list:
+        error_message = (
+            'Под ключом homeworks в ответе от API приходит не словарь.'
+        )
+        logger.error(error_message)
+        raise TypeError(error_message)
+    if response['homeworks'] == []:
+        return {}
+    return response['homeworks'][0]       
 
 
 def parse_status(homework):
     """Извлечение информации о домашней работе."""
-    homework_name = homework.get('homework_name')
     homework_status = homework.get('status')
+    homework_name = homework.get('homework_name')
     if homework_name is None:
-        error_message = 'Ошибка: начение homework_name не найдено.'
+        error_message = 'Ошибка: значение homework_name не найдено.'
         logger.error(error_message)
-        raise HomeWorkIsNoneException(error_message)
+        raise KeyError(error_message)
     if homework_status is None:
         error_message = 'Ошибка: у домашней работы отсутствует статус.'
         logger.error(error_message)
-        raise HomeworkStatusIsNoneException(error_message)
+        raise KeyError(error_message)
     if homework_status not in HOMEWORK_STATUSES:
         error_message = 'Ошибка: недокументированный статус домашней работы.'
         logger.error(error_message)
-        raise UndocumentedHomeworkStatusException(error_message)
+        raise KeyError(error_message)
     verdict = HOMEWORK_STATUSES[homework_status]
     return f'Изменился статус проверки работы "{homework_name}". {verdict}'
 
 
 def check_tokens():
     """Проверка токенов."""
-    token = True
     if PRACTICUM_TOKEN is None:
-        token = False
         logger.critical('Отсутствует PRACTICUM_TOKEN')
+        return False
     if TELEGRAM_TOKEN is None:
-        token = False
         logger.critical('Отсутствует TELEGRAM_TOKEN')
+        return False
     if TELEGRAM_CHAT_ID is None:
-        token = False
         logger.critical('Отсутствует TELEGRAM_CHAT_ID')
-    return token
+        return False
+    return True
 
 
 def main():
     """Основная логика работы бота."""
-
-    ...
-
+    if not check_tokens():
+        exit()
+        # logger.critical('Токены не найдены.')
+        # raise Exception('Токены не найдены. Программа прервана.')
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
-    current_timestamp = int(time.time())
-
-    ...
-
+    current_timestamp =int(time.time())
+    send_message(bot, 'Бот включился.')
+    # response = get_api_answer(current_timestamp)
+    # checked_homework = check_response(response)
+    # status = parse_status(checked_homework)
+    # send_message(bot, status)
+    # print(status)
     while True:
         try:
             response = get_api_answer(current_timestamp)
             checked_homework = check_response(response)
-
-            ...
-
-            current_timestamp = int(time.time())
+            if checked_homework:
+                homework_status = parse_status(checked_homework)
+                send_message(bot, homework_status)
+                if homework_status is None:
+                    send_message(bot, 'Нет новых статусов')
+            else:
+                logger.debug('В ответе нет новых статусов.')
+                send_message(bot, 'В ответе нет новых статусов.')
+                current_timestamp = int(time.time())
             time.sleep(RETRY_TIME)
-
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
             logger.critical(message)
             time.sleep(RETRY_TIME)
-        else:
-            ...
+        finally:
+            current_timestamp = int(time.time())
+            time.sleep(RETRY_TIME)
+
 
 
 if __name__ == '__main__':
