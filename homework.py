@@ -1,5 +1,4 @@
 import logging
-from msilib.schema import Error
 import os
 import sys
 import time
@@ -7,11 +6,6 @@ import time
 from dotenv import load_dotenv
 import telegram
 import requests
-
-# from .exceptions import (
-#     ApiStatusCodeException, 
-# )
-
 
 load_dotenv()
 
@@ -51,28 +45,32 @@ def send_message(bot, message):
 
 def get_api_answer(current_timestamp):
     """Получение данных от API Практикума."""
-    timestamp = current_timestamp or int(time.time())
-    # timestamp = current_timestamp
+    # timestamp = current_timestamp or int(time.time())
+    timestamp = current_timestamp
     params = {'from_date': timestamp}
     try:
         homework_statuses = requests.get(
             ENDPOINT, headers=HEADERS, params=params
             )
+    except Exception as error:
+        logger.error(f'Ошибка при запросе к основному API: {error}')
+    else:
         if homework_statuses.status_code != 200:
             error_message = (
-                f'Ошибка при запросе к основному API.'
+                f'Ошибка на сервере API.'
                 f'Статус-код API: {homework_statuses.status_code}.'
             )
             logger.error(error_message)
             raise Exception(error_message)
         return homework_statuses.json()
-    except Exception as error:
-        logger.error(f'Ошибка при запросе к основному API: {error}')
+    # except Exception as error:
+    #     logger.error(f'Ошибка при запросе к основному API: {error}')
+    #     raise Exception(error_message)
 
 
 def check_response(response):
     """Проверка ответа от API."""
-    if response.get('homeworks') is None:
+    if response['homeworks'] is None:
         error_message = 'Ответ от API не содержит ключа homeworks.'
         logger.error(error_message)
         raise KeyError(error_message)
@@ -88,7 +86,7 @@ def check_response(response):
         raise TypeError(error_message)
     if response['homeworks'] == []:
         return {}
-    return response['homeworks'][0]       
+    return response['homeworks']      
 
 
 def parse_status(homework):
@@ -128,11 +126,11 @@ def check_tokens():
 def main():
     """Основная логика работы бота."""
     if not check_tokens():
-        exit()
-        # logger.critical('Токены не найдены.')
-        # raise Exception('Токены не найдены. Программа прервана.')
+        logger.critical('Токены не найдены.')
+        raise ValueError('Токены не найдены. Программа прервана.')
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
-    current_timestamp =int(time.time())
+    # current_timestamp =int(time.time())
+    current_timestamp = 0
     send_message(bot, 'Бот включился.')
     # response = get_api_answer(current_timestamp)
     # checked_homework = check_response(response)
@@ -142,16 +140,22 @@ def main():
     while True:
         try:
             response = get_api_answer(current_timestamp)
-            checked_homework = check_response(response)
+            print(type(response))
+            checked_homework = check_response(response)[0]
+            # print(type(checked_homework))
+            # print(checked_homework)
             if checked_homework:
                 homework_status = parse_status(checked_homework)
+                # print(homework_status)
+                # print(type(homework_status))
                 send_message(bot, homework_status)
                 if homework_status is None:
                     send_message(bot, 'Нет новых статусов')
             else:
                 logger.debug('В ответе нет новых статусов.')
                 send_message(bot, 'В ответе нет новых статусов.')
-                current_timestamp = int(time.time())
+                # current_timestamp = int(time.time())
+                current_timestamp = 0
             time.sleep(RETRY_TIME)
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
