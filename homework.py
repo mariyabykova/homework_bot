@@ -45,8 +45,8 @@ def send_message(bot, message):
 
 def get_api_answer(current_timestamp):
     """Получение данных от API Практикума."""
-    # timestamp = current_timestamp or int(time.time())
-    timestamp = current_timestamp
+    timestamp = current_timestamp or int(time.time())
+    # timestamp = current_timestamp
     params = {'from_date': timestamp}
     try:
         homework_statuses = requests.get(
@@ -129,37 +129,27 @@ def main():
         logger.critical('Токены не найдены.')
         raise ValueError('Токены не найдены. Программа прервана.')
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
-    # current_timestamp =int(time.time())
-    current_timestamp = 0
+    current_timestamp =int(time.time())
+    # current_timestamp = 0
     send_message(bot, 'Бот включился.')
-    # response = get_api_answer(current_timestamp)
-    # checked_homework = check_response(response)
-    # status = parse_status(checked_homework)
-    # send_message(bot, status)
-    # print(status)
     while True:
         try:
             response = get_api_answer(current_timestamp)
-            print(type(response))
-            checked_homework = check_response(response)[0]
-            # print(type(checked_homework))
-            # print(checked_homework)
+            checked_homework = check_response(response)
             if checked_homework:
-                homework_status = parse_status(checked_homework)
-                # print(homework_status)
-                # print(type(homework_status))
+                homework_status = parse_status(checked_homework[0])
                 send_message(bot, homework_status)
                 if homework_status is None:
                     send_message(bot, 'Нет новых статусов')
             else:
                 logger.debug('В ответе нет новых статусов.')
                 send_message(bot, 'В ответе нет новых статусов.')
-                # current_timestamp = int(time.time())
-                current_timestamp = 0
+                current_timestamp = int(time.time())
+                # current_timestamp = 0
             time.sleep(RETRY_TIME)
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
-            logger.critical(message)
+            logger.error(message)
             time.sleep(RETRY_TIME)
         finally:
             current_timestamp = int(time.time())
