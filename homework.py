@@ -1,12 +1,19 @@
-import os
 import logging
-import requests
+import os
 import sys
 import time
 
-import telegram
-
 from dotenv import load_dotenv
+import telegram
+import requests
+
+from .exceptions import (
+    ApiStatusCodeException, 
+    HomeWorkIsNoneException, 
+    HomeworkStatusIsNoneException, 
+    UndocumentedHomeworkStatusException,
+)
+
 
 load_dotenv()
 
@@ -28,31 +35,21 @@ HOMEWORK_STATUSES = {
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO)
+    level=logging.DEBUG)
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 logger.addHandler(logging.StreamHandler(sys.stdout))
-
-
-class ApiStatusCodeException(Exception):
-    """Ошибка запроса к основному API:
-    статус-код не равен 200."""
-    pass
-
-
-class HomeWorkIsNoneException(Exception):
-    """Отсутствует значение homework_name."""
-    pass
-
-
-class HomeworkStatusIsNoneException(Exception):
-    """У домашней работы отсутствует статус."""
-    pass
 
 
 def send_message(bot, message):
     """Отправка сообщения."""
-    ...
+    try:
+        bot.send_message(TELEGRAM_CHAT_ID, message)
+        logger.info(f'В Телеграм отправлено сообщение: {message}')
+    except Exception as telegram_error:
+        logger.error(
+            f'Ошибка: {telegram_error}. В Телеграм не отправлено сообщение.'
+            )
 
 
 def get_api_answer(current_timestamp):
@@ -76,26 +73,33 @@ def get_api_answer(current_timestamp):
 
 
 def check_response(response):
+    """Проверка ответа от API."""
     
     ...
 
 
 def parse_status(homework):
+    """Извлечение информации о домашней работе."""
     homework_name = homework.get('homework_name')
     homework_status = homework.get('status')
     if homework_name is None:
-        error_message = 'Значение homework_name не найдено.'
+        error_message = 'Ошибка: начение homework_name не найдено.'
         logger.error(error_message)
         raise HomeWorkIsNoneException(error_message)
     if homework_status is None:
-        error_message = 'У домашней работы отсутствует статус.'
+        error_message = 'Ошибка: у домашней работы отсутствует статус.'
         logger.error(error_message)
         raise HomeworkStatusIsNoneException(error_message)
+    if homework_status not in HOMEWORK_STATUSES:
+        error_message = 'Ошибка: недокументированный статус домашней работы.'
+        logger.error(error_message)
+        raise UndocumentedHomeworkStatusException(error_message)
     verdict = HOMEWORK_STATUSES[homework_status]
     return f'Изменился статус проверки работы "{homework_name}". {verdict}'
 
 
 def check_tokens():
+    """Проверка токенов."""
     token = True
     if PRACTICUM_TOKEN is None:
         token = False
@@ -131,7 +135,7 @@ def main():
 
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
-            ...
+            logger.critical(message)
             time.sleep(RETRY_TIME)
         else:
             ...
