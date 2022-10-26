@@ -126,15 +126,15 @@ def main():
         raise ValueError('Токены не найдены.')
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     current_timestamp = int(time.time())
-    INITIAL_STATUS = ''
-    ERROR_MESSAGE = ''
+    initial_status = ''
+    initial_error_message = ''
     while True:
         try:
             response = get_api_answer(current_timestamp)
             checked_homework = check_response(response)
             if checked_homework:
                 homework_status = parse_status(checked_homework[0])
-                if homework_status == INITIAL_STATUS:
+                if homework_status == initial_status:
                     logger.debug('Нет новых статусов')
                 send_message(bot, homework_status)
             else:
@@ -145,9 +145,9 @@ def main():
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
             logger.error(message)
-            if message != ERROR_MESSAGE:
+            if message != initial_error_message:
                 send_message(bot, message)
-                ERROR_MESSAGE = message
+                initial_error_message = message
             time.sleep(RETRY_TIME)
 
 
