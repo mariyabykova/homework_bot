@@ -7,6 +7,8 @@ from dotenv import load_dotenv
 import telegram
 import requests
 
+from exceptions import RequestApiException
+
 load_dotenv()
 
 
@@ -60,7 +62,7 @@ def get_api_answer(current_timestamp):
                 f'Статус-код API: {homework_statuses.status_code}.'
             )
             logger.error(error_message)
-            raise Exception(error_message)
+            raise RequestApiException(error_message)
         return homework_statuses.json()
 
 
