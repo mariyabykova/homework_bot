@@ -54,11 +54,13 @@ def get_api_answer(current_timestamp):
             ENDPOINT, headers=HEADERS, params=params
         )
     except Exception as error:
-        logger.error(f'Ошибка при запросе к основному API: {error}')
+        error_message = f'Ошибка при запросе к основному API: {error}'
+        logger.error(error_message)
+        raise RequestApiException(error_message)
     else:
         if homework_statuses.status_code != 200:
             error_message = (
-                f'Ошибка на сервере API.'
+                f'Ошибка при запросе к API.'
                 f'Статус-код API: {homework_statuses.status_code}.'
             )
             logger.error(error_message)
