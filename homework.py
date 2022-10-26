@@ -2,6 +2,7 @@ import logging
 import os
 import sys
 import time
+from http import HTTPStatus
 
 from dotenv import load_dotenv
 import telegram
@@ -58,7 +59,7 @@ def get_api_answer(current_timestamp):
         logger.error(error_message)
         raise RequestApiException(error_message)
     else:
-        if homework_statuses.status_code != 200:
+        if homework_statuses.status_code != HTTPStatus.OK:
             error_message = (
                 f'Ошибка при запросе к API.'
                 f'Статус-код API: {homework_statuses.status_code}.'
@@ -70,20 +71,20 @@ def get_api_answer(current_timestamp):
 
 def check_response(response):
     """Проверка ответа от API."""
-    if response['homeworks'] is None:
-        error_message = 'Ответ от API не содержит ключа homeworks.'
-        logger.error(error_message)
-        raise KeyError(error_message)
-    if type(response) is not dict:
+    if not isinstance(response, dict):
         error_message = 'Ответ от API имеет некорректный тип.'
         logger.error(error_message)
         raise TypeError(error_message)
-    if type(response.get('homeworks')) is not list:
+    if not isinstance(response.get('homeworks'), list):
         error_message = (
             'Под ключом homeworks в ответе от API приходит не словарь.'
         )
         logger.error(error_message)
         raise TypeError(error_message)
+    if response.get('homeworks') is None:
+        error_message = 'Ответ от API не содержит ключа homeworks.'
+        logger.error(error_message)
+        raise KeyError(error_message)
     return response['homeworks']
 
 
@@ -91,11 +92,11 @@ def parse_status(homework):
     """Извлечение информации о домашней работе."""
     homework_status = homework.get('status')
     homework_name = homework.get('homework_name')
-    if homework_name is None:
+    if not homework_name:
         error_message = 'Ошибка: значение homework_name не найдено.'
         logger.error(error_message)
         raise KeyError(error_message)
-    if homework_status is None:
+    if not homework_status:
         error_message = 'Ошибка: у домашней работы отсутствует статус.'
         logger.error(error_message)
         raise KeyError(error_message)
