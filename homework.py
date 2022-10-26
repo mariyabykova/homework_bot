@@ -40,18 +40,17 @@ def send_message(bot, message):
     except Exception as telegram_error:
         logger.error(
             f'Ошибка: {telegram_error}. В Телеграм не отправлено сообщение.'
-            )
+        )
 
 
 def get_api_answer(current_timestamp):
     """Получение данных от API Практикума."""
     timestamp = current_timestamp or int(time.time())
-    # timestamp = current_timestamp
     params = {'from_date': timestamp}
     try:
         homework_statuses = requests.get(
             ENDPOINT, headers=HEADERS, params=params
-            )
+        )
     except Exception as error:
         logger.error(f'Ошибка при запросе к основному API: {error}')
     else:
@@ -63,9 +62,6 @@ def get_api_answer(current_timestamp):
             logger.error(error_message)
             raise Exception(error_message)
         return homework_statuses.json()
-    # except Exception as error:
-    #     logger.error(f'Ошибка при запросе к основному API: {error}')
-    #     raise Exception(error_message)
 
 
 def check_response(response):
@@ -84,9 +80,7 @@ def check_response(response):
         )
         logger.error(error_message)
         raise TypeError(error_message)
-    if response['homeworks'] == []:
-        return {}
-    return response['homeworks']      
+    return response['homeworks']
 
 
 def parse_status(homework):
@@ -126,35 +120,33 @@ def check_tokens():
 def main():
     """Основная логика работы бота."""
     if not check_tokens():
-        logger.critical('Токены не найдены.')
-        raise ValueError('Токены не найдены. Программа прервана.')
+        logger.critical('Токены не найдены. Программа прервана.')
+        raise ValueError('Токены не найдены.')
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
-    current_timestamp =int(time.time())
-    # current_timestamp = 0
-    send_message(bot, 'Бот включился.')
+    current_timestamp = int(time.time())
+    INITIAL_STATUS = ''
+    ERROR_MESSAGE = ''
     while True:
         try:
             response = get_api_answer(current_timestamp)
             checked_homework = check_response(response)
             if checked_homework:
                 homework_status = parse_status(checked_homework[0])
+                if homework_status == INITIAL_STATUS:
+                    logger.debug('Нет новых статусов')
                 send_message(bot, homework_status)
-                if homework_status is None:
-                    send_message(bot, 'Нет новых статусов')
             else:
                 logger.debug('В ответе нет новых статусов.')
                 send_message(bot, 'В ответе нет новых статусов.')
-                current_timestamp = int(time.time())
-                # current_timestamp = 0
+            current_timestamp = response.get('current_date')
             time.sleep(RETRY_TIME)
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
             logger.error(message)
+            if message != ERROR_MESSAGE:
+                send_message(bot, message)
+                ERROR_MESSAGE = message
             time.sleep(RETRY_TIME)
-        finally:
-            current_timestamp = int(time.time())
-            time.sleep(RETRY_TIME)
-
 
 
 if __name__ == '__main__':
