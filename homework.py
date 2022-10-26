@@ -136,9 +136,9 @@ def main():
             checked_homework = check_response(response)
             if checked_homework:
                 homework_status = parse_status(checked_homework[0])
-                if homework_status == initial_status:
-                    logger.debug('Нет новых статусов')
-                send_message(bot, homework_status)
+                if homework_status != initial_status:
+                    send_message(bot, homework_status)
+                    initial_status = homework_status
             else:
                 logger.debug('В ответе нет новых статусов.')
                 send_message(bot, 'В ответе нет новых статусов.')
