@@ -65,7 +65,7 @@ def get_api_answer(current_timestamp):
             )
             logger.error(error_message)
             raise RequestApiException(error_message)
-        return homework_statuses.json()
+    return homework_statuses.json()
 
 
 def check_response(response):
