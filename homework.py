@@ -81,7 +81,7 @@ def check_response(response):
         )
         logger.error(error_message)
         raise TypeError(error_message)
-    if response.get('homeworks') is None:
+    if 'homeworks' not in response.keys():
         error_message = 'Ответ от API не содержит ключа homeworks.'
         logger.error(error_message)
         raise KeyError(error_message)
@@ -92,13 +92,14 @@ def parse_status(homework):
     """Извлечение информации о домашней работе."""
     homework_status = homework.get('status')
     homework_name = homework.get('homework_name')
+    check_key(homework_status, 'status')
+    check_key(homework_name, 'homework_name')
     if homework_status not in HOMEWORK_STATUSES:
         error_message = 'Ошибка: недокументированный статус домашней работы.'
         logger.error(error_message)
         raise KeyError(error_message)
     verdict = HOMEWORK_STATUSES[homework_status]
-    if check_key(homework_status, 'status') and check_key(homework_name, 'homework_name'):
-        return f'Изменился статус проверки работы "{homework_name}". {verdict}'
+    return f'Изменился статус проверки работы "{homework_name}". {verdict}'
 
 
 def check_key(dict_value, dict_key):
@@ -107,8 +108,6 @@ def check_key(dict_value, dict_key):
         error_message = f'Ошибка. Значение {dict_key} не найдено.'
         logger.error(error_message)
         raise KeyError(error_message)
-    return True
-
 
 
 def check_tokens():
