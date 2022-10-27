@@ -110,16 +110,7 @@ def parse_status(homework):
 
 def check_tokens():
     """Проверка токенов."""
-    if PRACTICUM_TOKEN is None:
-        logger.critical('Отсутствует PRACTICUM_TOKEN')
-        return False
-    if TELEGRAM_TOKEN is None:
-        logger.critical('Отсутствует TELEGRAM_TOKEN')
-        return False
-    if TELEGRAM_CHAT_ID is None:
-        logger.critical('Отсутствует TELEGRAM_CHAT_ID')
-        return False
-    return True
+    return all([PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID])
 
 
 def main():
