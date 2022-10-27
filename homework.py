@@ -75,16 +75,16 @@ def check_response(response):
         error_message = 'Ответ от API имеет некорректный тип.'
         logger.error(error_message)
         raise TypeError(error_message)
+    if 'homeworks' not in response.keys():
+        error_message = 'Ответ от API не содержит ключа homeworks.'
+        logger.error(error_message)
+        raise KeyError(error_message)
     if not isinstance(response.get('homeworks'), list):
         error_message = (
             'Под ключом homeworks в ответе от API приходит не словарь.'
         )
         logger.error(error_message)
         raise TypeError(error_message)
-    if 'homeworks' not in response.keys():
-        error_message = 'Ответ от API не содержит ключа homeworks.'
-        logger.error(error_message)
-        raise KeyError(error_message)
     return response['homeworks']
 
 
