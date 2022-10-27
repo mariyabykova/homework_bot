@@ -92,20 +92,23 @@ def parse_status(homework):
     """Извлечение информации о домашней работе."""
     homework_status = homework.get('status')
     homework_name = homework.get('homework_name')
-    if not homework_name:
-        error_message = 'Ошибка: значение homework_name не найдено.'
-        logger.error(error_message)
-        raise KeyError(error_message)
-    if not homework_status:
-        error_message = 'Ошибка: у домашней работы отсутствует статус.'
-        logger.error(error_message)
-        raise KeyError(error_message)
     if homework_status not in HOMEWORK_STATUSES:
         error_message = 'Ошибка: недокументированный статус домашней работы.'
         logger.error(error_message)
         raise KeyError(error_message)
     verdict = HOMEWORK_STATUSES[homework_status]
-    return f'Изменился статус проверки работы "{homework_name}". {verdict}'
+    if check_key(homework_status, 'status') and check_key(homework_name, 'homework_name'):
+        return f'Изменился статус проверки работы "{homework_name}". {verdict}'
+
+
+def check_key(dict_value, dict_key):
+    """Проверка наличия значений ключей словаря."""
+    if not dict_value:
+        error_message = f'Ошибка. Значение {dict_key} не найдено.'
+        logger.error(error_message)
+        raise KeyError(error_message)
+    return True
+
 
 
 def check_tokens():
