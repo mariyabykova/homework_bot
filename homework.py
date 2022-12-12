@@ -47,7 +47,7 @@ def send_message(bot, message):
 
 
 def get_api_answer(current_timestamp):
-    """Получение данных от API Практикума."""
+    """Получение данных от API Практикума.."""
     timestamp = current_timestamp or int(time.time())
     params = {'from_date': timestamp}
     try:
