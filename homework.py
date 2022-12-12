@@ -70,7 +70,7 @@ def get_api_answer(current_timestamp):
 
 
 def check_response(response):
-    """Проверка ответа от API."""
+    """Проверка ответа от API.."""
     if not isinstance(response, dict):
         error_message = 'Ответ от API имеет некорректный тип.'
         logger.error(error_message)
