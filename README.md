@@ -1,4 +1,4 @@
-# homework_bot
+# Телеграм-бот
 python telegram bot
 
 ## Описание проекта
